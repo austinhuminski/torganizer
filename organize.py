@@ -43,7 +43,6 @@ class NewFile(object):
         tokens = [[]]
 
         for char in getattr(self, look_at).lower().strip():
-            print char
 
             if char.isalpha():
                 tokens[-1].append(char)
@@ -67,11 +66,13 @@ class NewFile(object):
         if tv_show:
             match = tv_show.group()
             self.tv_show = True
+            self.movie = False
             self.season = match[1:3].strip("0")
             self.episode = match[-2:].strip("0")
             self.match = match
         else:
             self.movie = True
+            self.tv_show = False
 
     def get_best_match(self):
         """
@@ -80,32 +81,35 @@ class NewFile(object):
         the file is associated with. If no match found, create the folders
         """
 
-        best_match = None
-        most_tokens = 0
+        if self.tv_show:
 
-        for folder in tv_show_folders:
-            folder_tokens = folder.lower().split(' ')
+            best_match = None
+            most_tokens = 0
 
-            # Get the count of common tokens and words within folders.
-            common_tokens = len(
-                set(self.tokens).intersection(set(folder_tokens))
-            )
+            for folder in tv_show_folders:
+                folder_tokens = folder.lower().split(' ')
 
-            if common_tokens > most_tokens:
-                most_tokens = common_tokens
-                best_match = folder
-                self.tv_show_name = folder
+                # Get the count of common tokens and words within folders.
+                common_tokens = len(
+                    set(self.tokens).intersection(set(folder_tokens))
+                )
 
-        # There was no folder found. Only get the filename up to where the
-        # season and epsisode declaration is and assign it as self.cut_name.
-        # cut_name is what we then use to re-tokenize and name a show folder.
-        if not best_match:
-            name = self.name
-            self.cut_name = name[:name.index(self.match)-1]
-            self.get_tokens(limit=0, look_at='cut_name')
-            self.tv_show_name = ' '.join(self.tokens).title()
+                if common_tokens > most_tokens:
+                    most_tokens = common_tokens
+                    best_match = folder
+                    self.tv_show_name = folder
 
-        self.place_in_folder()
+            # There was no folder found. Only get the filename up to where the
+            # season and epsisode declaration is and assign it as
+            # self.cut_name. cut_name is what we then use to re-tokenize and
+            # name a show folder.
+            if not best_match:
+                name = self.name
+                self.cut_name = name[:name.index(self.match)-1]
+                self.get_tokens(limit=0, look_at='cut_name')
+                self.tv_show_name = ' '.join(self.tokens).title()
+
+            self.place_in_folder()
 
     def place_in_folder(self):
         """
@@ -134,7 +138,10 @@ class NewFile(object):
 
 
 # Don't bother looking at files in the directory that end in these extensions.
-ignore_files = ('.py', '.pyc', '.swp', '.swn', '.swo', '.part', '.nfo')
+ignore_files = (
+    '.py', '.pyc', '.swp', '.swn', '.swo', '.part', '.nfo', '.md', '.git',
+    '.jpg', '.part', '.swm'
+)
 
 
 def process_files(recs):
@@ -142,20 +149,30 @@ def process_files(recs):
     Go through each file in the downloads directory.
     """
 
+    new_files = []
+
     for rec in recs:
 
         # Not yet ready to handle directories...maybe. Not tested.
-        if isdir(rec):
-            continue
-            rec_files = listdir(rec)
-            process_files(rec_files)
+        if isdir(rec) and rec != '.git':
+
+            directory_files = listdir(rec)
+
+            for directory_file in directory_files:
+                directory_file = '{0}/{1}'.format(rec, directory_file)
+                new_files.append(directory_file)
 
         elif isfile(rec):
+            new_files.append(rec)
+        else:
+            continue
 
-            if rec.lower().endswith(ignore_files):
-                continue
+    for download in new_files:
 
-            download = NewFile(rec)
+        if download.lower().endswith(ignore_files):
+            continue
+
+        download = NewFile(download)
 
         # See if it is a TV show or movie to determine what to do next.
         if download.tv_show:
