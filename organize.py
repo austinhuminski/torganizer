@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/local/bin/python
 
 """
 Organize movies and folders by putting them in the right folder
@@ -140,7 +140,7 @@ class NewFile(object):
 # Don't bother looking at files in the directory that end in these extensions.
 ignore_files = (
     '.py', '.pyc', '.swp', '.swn', '.swo', '.part', '.nfo', '.md', '.git',
-    '.jpg', '.part', '.swm'
+    '.jpg', '.part', '.swm', '.txt', 'sample.avi', 'Sample', 'Other', 'ETRG.mp4',
 )
 
 
